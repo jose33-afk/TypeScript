@@ -1,3 +1,5 @@
+import { iconSpinner, iconCheck, iconX} from './icons.js';
+
 class isAWord {
   input: HTMLInputElement | null;
   status: HTMLElement | null;
@@ -5,19 +7,26 @@ class isAWord {
   classeProcessando: string;
   classeValida: string;
   classeInvalida: string;
+  timerLimpeza: number | null;
 
   constructor() {
     this.input = document.querySelector('#inputTxt');
     this.status = document.querySelector('.status');
+    this.timerLimpeza = null;
 
     this.classeBase = 'status mt-4 text-center font-semibold bg-white p-2 rounded border min-h-[2.5rem]';
     this.classeProcessando = 'border-blue-600 text-blue-600';
     this.classeValida = 'border-green-600 text-green-600';
     this.classeInvalida = 'border-red-600 text-red-600';
+
+    if (this.status) {
+      this.status.className = this.classeBase + ' text-gray-400';
+      this.status.textContent = 'Digite uma palavra';
+    }
   }
 
   normalizarTexto(texto: string) {
-    return texto.trim().toLocaleLowerCase();
+    return texto.trim().toLowerCase();
   }
 
   async isWordBr(palavra: string) {
@@ -34,46 +43,66 @@ class isAWord {
       const data = await response.json() as ApiResponse;
       const pagDicionario = Object.values(data.query.pages)[0];
 
-       return !('missing' in pagDicionario);
+      return pagDicionario ? !('missing' in pagDicionario) : false;
     } catch(e) {
       return false
     }
   }
 
+  #resetarStatus() {
+    if (this.timerLimpeza) clearTimeout(this.timerLimpeza);
+
+    this.timerLimpeza = setTimeout(() => {
+      if (this.input) this.input.value = '';
+       if (this.status) {
+        this.status.className = this.classeBase + ' text-gray-400';
+        this.status.textContent = 'Digite uma palavra';
+      }
+
+      this.timerLimpeza = null;
+    }, 2000);
+  }
+
   init () {
     const input = this.input;
     const status = this.status;
-    let timer: number;
+    let timerDelay: number | null = null;
 
     if (!input || !status) return;
 
     input.addEventListener('change', () => {
-      clearTimeout(timer)
-
+      if (timerDelay) { clearTimeout(timerDelay); timerDelay = null; };
+      if (this.timerLimpeza) { clearTimeout(this.timerLimpeza); this.timerLimpeza = null; };
+  
       status.className = this.classeBase + ' ' + this.classeProcessando;
-      status.textContent = '⏳ Processando...';
+      status.innerHTML = `${iconSpinner} Processando...`;
 
       let txtLimpo = this.normalizarTexto(input.value);
 
-      if(!/^[a-zA-ZÀ-ÿ]+$/.test(txtLimpo)) {
+      if(!/^\p{L}+$/u.test(txtLimpo)) {
         input.value = '';
         status.className = this.classeBase + ' ' + this.classeInvalida;
-        status.textContent = 'Digite somente letras';
+        status.innerHTML = `${iconX} Apenas letras (sem números ou especiais)`;
 
+        this.#resetarStatus();
+        
         return;
       };
 
-      timer = setTimeout(async () => {
-        const valido = await this.isWordBr(txtLimpo);
-        
-        status.className = this.classeBase + ' ' + (valido ? this.classeValida : this.classeInvalida);
-        status.textContent = valido ? '✅ Válida' : '❌ Inválida';
+      timerDelay = setTimeout(async () => {
+        const palavraAtual = this.normalizarTexto(input.value);
 
-        setTimeout(() => {
-          input.value = '';
-          status.className = this.classeBase;
-          status.textContent = '';
-        }, 2000);
+        if (palavraAtual !== txtLimpo) return;
+
+        const valido = await this.isWordBr(txtLimpo);
+
+        const palavraDepois = input.value.trim().toLowerCase();
+        if (palavraDepois !== txtLimpo) return;
+
+        status.className = this.classeBase + ' ' + (valido ? this.classeValida : this.classeInvalida);
+        status.innerHTML = valido ? `${iconCheck} Válida` : `${iconX} Inválida`;
+
+        this.#resetarStatus();
       }, 3000);
     })
   }
