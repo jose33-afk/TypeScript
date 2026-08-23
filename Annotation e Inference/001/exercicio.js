@@ -1,32 +1,43 @@
 "use strict";
 class isAWord {
     input;
+    status;
     constructor() {
         this.input = document.querySelector('#inputTxt');
+        this.status = document.querySelector('.status');
     }
     normalizarTexto(texto) {
         return texto.trim().toLocaleLowerCase();
     }
     async isWordBr(palavra) {
         const url = `https://pt.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(palavra)}&format=json&origin=*`; // 1.0
-        const response = await fetch(url);
-        const data = await response.json();
-        const pagDicionario = Object.values(data.query.pages)[0];
-        return !('missing' in pagDicionario);
-        // Estava aqui o ts estava reclamando pq n especifiquei o oq, a api retorna
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            const pagDicionario = Object.values(data.query.pages)[0];
+            return !('missing' in pagDicionario);
+        }
+        catch (e) {
+            return false;
+        }
     }
-    async init() {
+    init() {
         const input = this.input;
+        const status = this.status;
         let timer;
-        if (!input)
+        if (!input || !status)
             return;
         input.addEventListener('change', () => {
-            clearInterval(timer);
+            clearTimeout(timer);
+            status.textContent = 'Processando...';
+            status.classList.add('text-blue-600');
             let txtLimpo = this.normalizarTexto(input.value);
             if (!/^[a-zA-ZÀ-ÿ]+$/.test(txtLimpo))
                 return;
             timer = setTimeout(async () => {
-                console.log(await this.isWordBr(txtLimpo));
+                const valido = await this.isWordBr(txtLimpo);
+                status.textContent = valido ? '✅ Válida' : '❌ Inválida';
+                status.classList.add(valido ? 'text-green-600' : 'text-red-60');
             }, 3000);
         });
     }
@@ -36,4 +47,5 @@ validador.init();
 /*
   1 - Serve para: Decodificar caracteres especiais na URL, como acentos, espaços,
       ç, etc...
+  1.1 - isso fugiu do nivel do exercicio, mas está aqui para fins de organização.
 */ 
