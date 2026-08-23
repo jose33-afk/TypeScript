@@ -1,10 +1,19 @@
 class isAWord {
   input: HTMLInputElement | null;
   status: HTMLElement | null;
+  classeBase: string;
+  classeProcessando: string;
+  classeValida: string;
+  classeInvalida: string;
 
   constructor() {
     this.input = document.querySelector('#inputTxt');
     this.status = document.querySelector('.status');
+
+    this.classeBase = 'status mt-4 text-center font-semibold bg-white p-2 rounded border min-h-[2.5rem]';
+    this.classeProcessando = 'border-blue-600 text-blue-600';
+    this.classeValida = 'border-green-600 text-green-600';
+    this.classeInvalida = 'border-red-600 text-red-600';
   }
 
   normalizarTexto(texto: string) {
@@ -40,20 +49,31 @@ class isAWord {
 
     input.addEventListener('change', () => {
       clearTimeout(timer)
-      status.textContent = 'Processando...';
-      status.classList.add('text-blue-600');
+
+      status.className = this.classeBase + ' ' + this.classeProcessando;
+      status.textContent = '⏳ Processando...';
 
       let txtLimpo = this.normalizarTexto(input.value);
 
-      if(!/^[a-zA-ZÀ-ÿ]+$/.test(txtLimpo)) return;
+      if(!/^[a-zA-ZÀ-ÿ]+$/.test(txtLimpo)) {
+        input.value = '';
+        status.className = this.classeBase + ' ' + this.classeInvalida;
+        status.textContent = 'Digite somente letras';
+
+        return;
+      };
 
       timer = setTimeout(async () => {
         const valido = await this.isWordBr(txtLimpo);
-        status.textContent = valido ? '✅ Válida' : '❌ Inválida';
-        status.classList.add(valido ? 'text-green-600' : 'text-red-60');
-
-    
         
+        status.className = this.classeBase + ' ' + (valido ? this.classeValida : this.classeInvalida);
+        status.textContent = valido ? '✅ Válida' : '❌ Inválida';
+
+        setTimeout(() => {
+          input.value = '';
+          status.className = this.classeBase;
+          status.textContent = '';
+        }, 2000);
       }, 3000);
     })
   }
