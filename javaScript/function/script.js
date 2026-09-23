@@ -119,6 +119,23 @@ const resultados = processar.apply(frutas, arrayfunction);
 resultados[0]()
 */
 
+
+// Passando argumetos com ... alternativa. 
+// Caso queira passar uma Array como argumento.
+
+/*
+const numeros = [3, 4, 7,2]
+console.log(Math.max(...numeros))
+*/
+
+
+// Encurtando uma função com bind.
+
+const query = document.querySelectorAll.bind(document);
+
+console.log(query('li'))
+console.log(query('ul'))
+
 /*
   1 - o call: muda o this, originalmente as funcoes tem como this o windown,
       o primeiro argumento é o this, os seguintes sao os argumentos normais.
